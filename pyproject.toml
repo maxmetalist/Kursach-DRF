@@ -1,0 +1,44 @@
+[project]
+name = "pythonproject9"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Max",email = "z.max83@mail.ru"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "requests (>=2.32.5,<3.0.0)",
+    "django (>=5.2.7,<6.0.0)",
+    "psycopg2 (>=2.9.10,<3.0.0)",
+    "djangorestframework (>=3.16.1,<4.0.0)",
+    "drf-yasg (>=1.21.11,<2.0.0)",
+    "celery (>=5.5.3,<6.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.lint.dependencies]
+flake8 = "^7.3.0"
+black = "^25.9.0"
+mypy = "^1.18.2"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.2"
+
+[tool.black]
+line-length = 119
+exclude = '.git'
+
+[tool.mypy]
+line-length = 119
+disallow_untyped_defs = true
+warn_return_any = true
+exclude = ['venv', 'tests']
+
+[tool.isort]
+line_length = 119
