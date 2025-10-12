@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -23,7 +24,9 @@ class Habit(models.Model):
     )
     periodicity = models.PositiveIntegerField(choices=PERIODICITY_CHOICES, default=1, verbose_name="Периодичность")
     reward = models.CharField(max_length=255, blank=True, verbose_name="Вознаграждение")
-    time_to_complete = models.PositiveIntegerField(verbose_name="Время на выполнение (в секундах)")
+    time_to_complete = models.PositiveIntegerField(
+        verbose_name="Время на выполнение (в секундах)", validators=[MinValueValidator(1), MaxValueValidator(120)]
+    )
     is_public = models.BooleanField(default=False, verbose_name="Признак публичности")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
 

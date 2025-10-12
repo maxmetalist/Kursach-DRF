@@ -37,18 +37,15 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def link_telegram(request):
     """Связать Telegram аккаунт с профилем пользователя"""
-    telegram_chat_id = request.data.get('telegram_chat_id')
-    telegram_username = request.data.get('telegram_username')
+    telegram_chat_id = request.data.get("telegram_chat_id")
+    telegram_username = request.data.get("telegram_username")
 
     if not telegram_chat_id:
-        return Response(
-            {"error": "telegram_chat_id обязателен"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": "telegram_chat_id обязателен"}, status=status.HTTP_400_BAD_REQUEST)
 
     profile = request.user.profile
     profile.telegram_chat_id = telegram_chat_id
@@ -56,8 +53,10 @@ def link_telegram(request):
         profile.telegram_username = telegram_username
     profile.save()
 
-    return Response({
-        "message": "Telegram аккаунт успешно привязан",
-        "telegram_chat_id": profile.telegram_chat_id,
-        "telegram_username": profile.telegram_username
-    })
+    return Response(
+        {
+            "message": "Telegram аккаунт успешно привязан",
+            "telegram_chat_id": profile.telegram_chat_id,
+            "telegram_username": profile.telegram_username,
+        }
+    )
