@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -8,6 +8,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.permissions import IsOwner
 from users.serializers import UserRegisterSerializer, UserSerializer
+
+User = get_user_model()
 
 
 class RegisterView(generics.CreateAPIView):
@@ -47,16 +49,16 @@ def link_telegram(request):
     if not telegram_chat_id:
         return Response({"error": "telegram_chat_id обязателен"}, status=status.HTTP_400_BAD_REQUEST)
 
-    profile = request.user.profile
-    profile.telegram_chat_id = telegram_chat_id
+    user = request.user
+    user.telegram_chat_id = telegram_chat_id
     if telegram_username:
-        profile.telegram_username = telegram_username
-    profile.save()
+        user.telegram_username = telegram_username
+    user.save()
 
     return Response(
         {
             "message": "Telegram аккаунт успешно привязан",
-            "telegram_chat_id": profile.telegram_chat_id,
-            "telegram_username": profile.telegram_username,
+            "telegram_chat_id": user.telegram_chat_id,
+            "telegram_username": user.telegram_username,
         }
     )

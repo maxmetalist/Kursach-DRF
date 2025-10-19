@@ -1,21 +1,23 @@
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, APITestCase
 
 from habits.models import Habit
 from habits.serializers import HabitSerializer, PublicHabitSerializer
 from habits.tasks import debug_task, send_habit_reminders, send_test_reminder_default
-from users.models import UserProfile
+
+User = get_user_model()
 
 
 class HabitModelTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="testpass123")
+        self.user = User.objects.create_user(email="test@example.com", password="testpass123")
 
         self.pleasant_habit = Habit.objects.create(
             user=self.user,
@@ -34,14 +36,14 @@ class HabitModelTest(TestCase):
             user=self.user,
             place="Парк",
             time="07:00:00",
-            action="Бегать",
+            action="Бухать",
             is_pleasant=False,
             periodicity=1,
             time_to_complete=120,
             is_public=True,
         )
 
-        self.assertEqual(habit.action, "Бегать")
+        self.assertEqual(habit.action, "Бухать")
         self.assertEqual(habit.place, "Парк")
         self.assertFalse(habit.is_pleasant)
         self.assertTrue(habit.is_public)
@@ -59,7 +61,7 @@ class HabitModelTest(TestCase):
             is_public=False,
         )
 
-        expected_str = f"{self.user.username}: Читать в 09:00:00 в Дом"
+        expected_str = f"{self.user.email}: Читать в 09:00:00 в Дом"
         self.assertEqual(str(habit), expected_str)
 
     def test_habit_validation_reward_and_related_habit(self):
@@ -144,7 +146,7 @@ class HabitModelTest(TestCase):
 
 class HabitSerializerTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="testpass123")
+        self.user = User.objects.create_user(email="test@example.com", password="testpass123")  # ДОБАВЬТЕ email
 
         self.pleasant_habit = Habit.objects.create(
             user=self.user,
@@ -216,15 +218,15 @@ class HabitSerializerTest(TestCase):
         data = serializer.data
 
         self.assertEqual(data["action"], "Громко слушать Judas Priest и класть на мнение всех")
-        self.assertEqual(data["user"], "testuser")
+        self.assertEqual(data["user"], self.user.email)
         self.assertIn("place", data)
         self.assertNotIn("reward", data)  # Не должно быть в публичном сериализаторе
 
 
 class HabitViewsTest(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="testpass123")
-        self.other_user = User.objects.create_user(username="otheruser", password="testpass123")
+        self.user = User.objects.create_user(email="test@example.com", password="testpass123")
+        self.other_user = User.objects.create_user(email="other@example.com", password="testpass123")
 
         self.habit = Habit.objects.create(
             user=self.user,
@@ -294,7 +296,7 @@ class HabitViewsTest(APITestCase):
         response = self.client.post(self.habits_list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Habit.objects.count(), 4)
-        self.assertEqual(Habit.objects.last().action, "Бухать")
+        self.assertEqual(Habit.objects.last().action, "Спать")
 
     def test_habit_detail_owner(self):
         """Тест получения деталей привычки владельцем"""
@@ -345,15 +347,16 @@ class HabitViewsTest(APITestCase):
 
 class CeleryTasksTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="testpass123")
+        self.user = User.objects.create_user(
+            email="test@example.com", password="testpass123", telegram_chat_id="123456"
+        )
 
-        # Создаем профиль с telegram_chat_id
-        self.profile = UserProfile.objects.create(user=self.user, telegram_chat_id="123456")
-
+        # Создаем привычку
+        now = timezone.now()
         self.habit = Habit.objects.create(
             user=self.user,
             place="Дом",
-            time="08:00:00",
+            time=now.time(),
             action="Орать караоке",
             is_pleasant=False,
             periodicity=1,
@@ -364,14 +367,7 @@ class CeleryTasksTest(TestCase):
     @patch("habits.tasks.bot_instance.send_reminder")
     def test_send_habit_reminders(self, mock_send_reminder):
         """Тест задачи отправки напоминаний"""
-        # Настраиваем привычку на текущее время
-        from django.utils import timezone
-
-        now = timezone.now()
-        self.habit.time = now.time()
-        self.habit.save()
-
-        mock_send_reminder.return_value = True
+        mock_send_reminder.return_value = AsyncMock(return_value=True)
 
         result = send_habit_reminders()
 
@@ -381,7 +377,7 @@ class CeleryTasksTest(TestCase):
     @patch("habits.tasks.send_test_reminder.delay")
     def test_send_test_reminder_default(self, mock_send_reminder):
         """Тест тестовой задачи отправки напоминаний"""
-        mock_send_reminder.return_value = True
+        mock_send_reminder.return_value = None
 
         result = send_test_reminder_default()
 
@@ -396,8 +392,8 @@ class CeleryTasksTest(TestCase):
     @patch("habits.tasks.bot_instance.send_reminder")
     def test_send_habit_reminders_no_telegram(self, mock_send_reminder):
         """Тест отправки напоминаний пользователю без Telegram"""
-        self.user.profile.telegram_chat_id = ""
-        self.user.profile.save()
+        self.user.telegram_chat_id = ""
+        self.user.save()
 
         result = send_habit_reminders()
 

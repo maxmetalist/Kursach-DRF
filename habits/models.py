@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
@@ -14,7 +14,7 @@ class Habit(models.Model):
         (7, "Еженедельно"),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Пользователь")
     place = models.CharField(max_length=255, verbose_name="Место")
     time = models.TimeField(verbose_name="Время")
     action = models.CharField(max_length=255, verbose_name="Действие")
@@ -33,7 +33,6 @@ class Habit(models.Model):
     class Meta:
         verbose_name = "Привычка"
         verbose_name_plural = "Привычки"
-        ordering = ["-created_at"]
 
     def clean(self):
         from .validators import validate_habit
@@ -46,4 +45,4 @@ class Habit(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.user.username}: {self.action} в {self.time} в {self.place}"
+        return f"{self.user.email if self.user else 'None'}: {self.action} в {self.time} в {self.place}"

@@ -1,29 +1,21 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from users.models import UserProfile
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = ["telegram_chat_id", "phone"]
+User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    profile = UserProfileSerializer(read_only=True)
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "password", "profile"]
+        fields = ["id", "email", "password", "phone", "telegram_username", "telegram_chat_id"]
 
     def create(self, validated_data):
-        user = User.objects.create_user(
-            username=validated_data["username"],
-            email=validated_data.get("email", ""),
-            password=validated_data["password"],
-        )
+        password = validated_data.pop("password")
+        user = User.objects.create_user(**validated_data)
+        user.set_password(password)
+        user.save()
         return user
 
 
@@ -33,7 +25,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["username", "email", "password", "password_confirm"]
+        fields = ["email", "password", "password_confirm", "phone", "telegram_username"]
 
     def validate(self, data):
         if data["password"] != data["password_confirm"]:
@@ -42,9 +34,11 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("password_confirm")
+        password = validated_data.pop("password")
         user = User.objects.create_user(
-            username=validated_data["username"],
             email=validated_data.get("email", ""),
-            password=validated_data["password"],
+            password=password,
+            phone=validated_data.get("phone", ""),
+            telegram_username=validated_data.get("telegram_username", ""),
         )
         return user

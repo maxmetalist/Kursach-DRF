@@ -2,14 +2,15 @@ import asyncio
 import logging
 
 from celery import shared_task
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 
+from habits.models import Habit
 from telegram_bot.bot import bot_instance
-from users.models import UserProfile
-
-from .models import Habit
 
 logger = logging.getLogger(__name__)
+
+User = get_user_model()
 
 
 @shared_task
@@ -27,7 +28,7 @@ def send_habit_reminders():
         sent_count = 0
         for habit in habits:
             if should_send_reminder(habit):
-                if hasattr(habit.user, "profile") and habit.user.profile.telegram_chat_id:
+                if habit.user.telegram_chat_id:
 
                     # Запускаем асинхронную задачу
                     try:
@@ -36,7 +37,7 @@ def send_habit_reminders():
                         asyncio.set_event_loop(loop)
 
                         success = loop.run_until_complete(
-                            bot_instance.send_reminder(habit.user.profile.telegram_chat_id, habit)
+                            bot_instance.send_reminder(habit.user.telegram_chat_id, habit)
                         )
                         loop.close()
 
@@ -62,12 +63,12 @@ def send_daily_reminders():
         logger.info("Starting daily reminders task")
 
         # Получаем всех пользователей с привычками
-        users_with_habits = UserProfile.objects.filter(user__habit__isnull=False).distinct()
+        users_with_habits = User.objects.filter(habits__isnull=False).distinct()
 
         sent_count = 0
-        for profile in users_with_habits:
-            if profile.telegram_chat_id:
-                habits_today = Habit.objects.filter(user=profile.user).order_by("time")
+        for user in users_with_habits:
+            if user.telegram_chat_id:
+                habits_today = Habit.objects.filter(user=user).order_by("time")
 
                 if habits_today.exists():
                     message = format_daily_reminder(habits_today)
@@ -76,14 +77,14 @@ def send_daily_reminders():
                         loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(loop)
 
-                        success = loop.run_until_complete(send_telegram_message(profile.telegram_chat_id, message))
+                        success = loop.run_until_complete(send_telegram_message(user.telegram_chat_id, message))
                         loop.close()
 
                         if success:
                             sent_count += 1
 
                     except Exception as e:
-                        logger.error(f"Failed to send daily reminder to {profile.user.username}: {e}")
+                        logger.error(f"Failed to send daily reminder to {user.email}: {e}")
 
         logger.info(f"Completed daily reminders task. Sent {sent_count} reminders")
         return f"Sent {sent_count} daily reminders"
@@ -117,18 +118,14 @@ def send_test_reminder(chat_id: str, habit_id: int):
 def send_test_reminder_default():
     """Тестовая задача без аргументов для админки"""
     try:
-        from habits.models import Habit
-        from users.models import UserProfile
+        user_with_telegram = User.objects.filter(telegram_chat_id__isnull=False).exclude(telegram_chat_id="").first()
 
-        # Находим первого пользователя с Telegram chat_id и привычкой
-        profile = UserProfile.objects.filter(telegram_chat_id__isnull=False).first()
-
-        if profile and Habit.objects.filter(user=profile.user).exists():
-            habit = Habit.objects.filter(user=profile.user).first()
+        if user_with_telegram and Habit.objects.filter(user=user_with_telegram).exists():
+            habit = Habit.objects.filter(user=user_with_telegram).first()
 
             # Запускаем задачу с аргументами
-            send_test_reminder.delay(profile.telegram_chat_id, habit.id)
-            return f"Test task queued for {profile.user.username}"
+            send_test_reminder.delay(user_with_telegram.telegram_chat_id, habit.id)
+            return f"Test task queued for {user_with_telegram.email}"
         return "No users with Telegram found"
 
     except Exception as e:

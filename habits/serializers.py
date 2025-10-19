@@ -1,7 +1,10 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from habits.models import Habit
+
+User = get_user_model()
 
 
 class HabitSerializer(serializers.ModelSerializer):
@@ -58,7 +61,7 @@ class HabitSerializer(serializers.ModelSerializer):
 
 
 class PublicHabitSerializer(serializers.ModelSerializer):
-    user = serializers.CharField(source="user.username")
+    user = serializers.CharField(source="user.email")
 
     class Meta:
         model = Habit

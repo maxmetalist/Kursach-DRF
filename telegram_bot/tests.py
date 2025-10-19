@@ -1,16 +1,18 @@
 from datetime import time
 from unittest.mock import AsyncMock, patch
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from habits.models import Habit
 from telegram_bot.bot import HabitTrackerBot
 
+User = get_user_model()
+
 
 class TelegramBotTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="testpass123")
+        self.user = User.objects.create_user(email="test@example.com", password="testpass123")
 
         self.habit = Habit.objects.create(
             user=self.user,
