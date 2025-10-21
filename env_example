@@ -1,0 +1,11 @@
+SECRET_KEY="your-django-insecure-very-long-secret-key
+
+# database settings
+DATABASE_NAME="your_data_base_name"
+DATABASE_USER="your_data_base_username(postgres in default)"
+DATABASE_PASSWORD="your_data_base_password"
+DATABASE_HOST="your_data_base_host(localhost in default)"
+DATABASE_PORT="your_data_base_port(5432 in default)"
+
+# telegram-bot settings
+TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
