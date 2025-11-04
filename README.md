@@ -35,3 +35,23 @@
     Особенно грёбаные тесты.
 ### Шаблон образца файла с ключами .env
     Постоянно я про него забываю
+### Docker
+    Сервисы запускаются в разных контейнерах. Перед запуском контейнера выполнить миграции:
+    # Создайте миграции (если нужно)
+    docker-compose exec web python manage.py makemigrations
+
+    # Выполните миграции
+    docker-compose exec web python manage.py migrate
+
+    # Создайте администратора Django
+    docker-compose exec web python manage.py createsuperuser
+    
+    Приложение должно быть доступно по адресу
+http://localhost:8000/
+
+    Список привычек
+http://localhost:8000/api/habits
+
+    Админка
+http://localhost:8000/admin
+### Server настройка и деплой

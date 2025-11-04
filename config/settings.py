@@ -100,7 +100,7 @@ DATABASES = {
         "NAME": os.getenv("DATABASE_NAME"),
         "USER": os.getenv("DATABASE_USER"),
         "PASSWORD": os.getenv("DATABASE_PASSWORD"),
-        "HOST": os.getenv("DATABASE_HOST"),
+        "HOST": os.getenv("DATABASE_HOST", "db"),
         "PORT": os.getenv("DATABASE_PORT", default="5432"),
     }
 }
@@ -129,6 +129,11 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
