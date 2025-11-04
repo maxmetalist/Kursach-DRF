@@ -1,5 +1,5 @@
 [project]
-name = "Kursach-DRF"
+name = "kursach-drf"
 version = "0.1.0"
 description = "Django Habit-tracker"
 authors = [
