@@ -63,12 +63,6 @@ jobs:
       run: |
         python manage.py test
 
-  test-telegram-bot:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
   build:
     runs-on: ubuntu-latest
     needs: test
