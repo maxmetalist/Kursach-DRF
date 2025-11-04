@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 
 from habits.models import Habit
 from habits.tasks import send_habit_reminders
-from users.models import UserProfile
+from users.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class Command(BaseCommand):
 
     def send_test_reminder_async(self):
         """Отправить тестовое напоминание асинхронно"""
-        profile = UserProfile.objects.filter(telegram_chat_id__isnull=False).first()
+        profile = User.objects.filter(telegram_chat_id__isnull=False).first()
 
         if profile and Habit.objects.filter(user=profile.user).exists():
             habit = Habit.objects.filter(user=profile.user).first()
@@ -52,7 +52,7 @@ class Command(BaseCommand):
 
         from telegram_bot.bot import bot_instance
 
-        profile = UserProfile.objects.filter(telegram_chat_id__isnull=False).first()
+        profile = User.objects.filter(telegram_chat_id__isnull=False).first()
 
         if profile and Habit.objects.filter(user=profile.user).exists():
             habit = Habit.objects.filter(user=profile.user).first()
