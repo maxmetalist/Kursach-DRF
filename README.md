@@ -55,3 +55,88 @@ http://localhost:8000/api/habits
     Админка
 http://localhost:8000/admin
 ### Server настройка и деплой
+    Будет много букавок, как и в прошлой домашке
+### Настройка сервера
+1. Подготовка сервера
+Создайте VM в Yandex Cloud
+Настройте SSH доступ
+Обновите систему: sudo apt update && sudo apt upgrade -y
+2. Установка Docker
+Чтобы установить Docker, воспользуйтесь инструкцией по установке с официального
+сайта: https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository.
+3. Настройка проекта
+Клонируйте репозиторий. Наберите в командной строке поочерёдно следующие команды:
+    cd /var/www
+    sudo git clone https://github.com/your-username/your-repo.git
+    sudo chown -R $USER:$USER your-repo/
+    cd your-repo
+your-username замените на имя вашего пользователя в акке гита
+your-repo замените на название вашего репозитория в гите
+4. Создание .env файла
+#### Создайте .env файл с настройками
+    Опять же, в командной строке:
+cat > .env << EOF
+DEBUG=False
+SECRET_KEY=your-secret-key-here
+DATABASE_NAME=your_db_name
+DATABASE_USER=your_db_user
+DATABASE_PASSWORD=your_secure_password
+ALLOWED_HOSTS=your-server-ip,localhost,127.0.0.1
+REDIS_URL=redis://redis:6379/0
+EOF
+
+#### Настройте права
+    CMD наше всё...:
+chmod 600 .env
+### GitHub Actions
+1. Добавление Secrets в репозиторий
+В GitHub: Settings → Secrets and variables → Actions → New repository secret
+Необходимые secrets:
+SERVER_HOST - IP адрес сервера (приложение развёрнуто на динамическом IP.
+                   В данный момент 84.201.139.158, пока не остановлена ВМ)
+SERVER_USER - имя пользователя на сервере (логин, а не название ВМ. У меня masyama)
+SSH_KEY - приватный SSH ключ
+2. Создание SSH ключа
+ssh-keygen -t ed25519 -C "github-actions" -f ~/.ssh/deploy_key
+3. Добавление публичного ключа на сервер
+#### Скопируйте публичный ключ
+cat ~/.ssh/deploy_key.pub
+#### На сервере добавьте в authorized_keys
+echo "ssh-ed25519 AAA... github-actions" >> ~/.ssh/authorized_keys
+### Запуск приложения
+    Ну, я думаю, понятно, где это набирать:
+cd /opt/kursach-drf/Kursach-DRF Это вход в папку с приложением на сервере
+#### Сборка и запуск
+docker compose up --build -d
+#### Остановка
+docker compose down
+### Проблемы с правами Docker
+#### Добавить пользователя в группу docker
+    Наша любимая CMD:
+sudo usermod -aG docker $USER
+newgrp docker
+### Если кэш контейнера переполнится:
+    И как бы я жил без CMD:
+#### Удалить неиспользуемые образы
+docker system prune -f
+#### Полная очистка
+docker system prune -a -f
+
+## Приложение доступно по адресу:
+Основной URL: http://84.201.139.158:8000
+
+Документация API:
+
+Swagger: http://84.201.139.158:8000/swagger/
+
+ReDoc: http://84.201.139.158:8000/redoc/
+
+API endpoints:
+
+Регистрация: /api/auth/register/
+
+Логин: /api/auth/login/
+
+Привычки: /api/habits/
+
+Публичные привычки: /api/habits/public/
